@@ -40,6 +40,7 @@ func (m *Matrix) print() {
 	}
 }
 
+// LUM is Lower Unitriangular Matrix
 func (m *Matrix) LUM() Matrix {
 
 	var lum Matrix
@@ -77,14 +78,57 @@ func (m *Matrix) LUM() Matrix {
 	return lum
 }
 
+// UUM is Upper Unitriangular Matrix
+func (m *Matrix) UUM() Matrix {
+	var uum Matrix
+	var size int
+
+	if m.rows > m.cols {
+		size = m.cols
+	} else {
+		size = m.rows
+	}
+
+	value := make([][]float64, size)
+
+	for i := 0; i < size; i++ {
+		value[i] = make([]float64, size)
+		for j := 0; j < size; j++ {
+			value[i][j] = rand.Float64() * 100.0
+		}
+	}
+
+	uum.value = value
+	uum.cols = size
+	uum.rows = size
+
+	for i := uum.rows - 1; i > 0; i-- {
+		for l := i - 1; l > -1; l-- {
+			k := uum.value[l][i] / uum.value[i][i]
+
+			for j := 0; j < uum.cols; j++ {
+				uum.value[l][j] -= k * uum.value[i][j]
+			}
+		}
+	}
+
+	return uum
+}
+
 func main() {
 	matrix := generateRandomMatrix(5, 5)
 
 	matrix.print()
 
 	fmt.Println()
-
+	
 	lum := matrix.LUM()
-
+	
 	lum.print()
+
+	fmt.Println()
+
+	uum := matrix.UUM()
+
+	uum.print()
 }
