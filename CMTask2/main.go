@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 )
 
@@ -40,95 +41,137 @@ func (m *Matrix) print() {
 	}
 }
 
-// LUM is Lower Unitriangular Matrix
-func (m *Matrix) LUM() Matrix {
-
+// LUDecomposition returns 2 matrixes L - lower triangular matrix & U - upper triangular matrix
+// which A = LU
+func (m *Matrix) LUDecomposition() (Matrix, Matrix) {
 	var lum Matrix
-	var size int
-
-	if m.rows > m.cols {
-		size = m.cols
-	} else {
-		size = m.rows
-	}
-
-	value := make([][]float64, size)
-
-	for i := 0; i < size; i++ {
-		value[i] = make([]float64, size)
-		for j := 0; j < size; j++ {
-			value[i][j] = rand.Float64() * 100.0
-		}
-	}
-
-	lum.value = value
-	lum.cols = size
-	lum.rows = size
-
-	for i := 0; i < lum.rows-1; i++ {
-		for l := i + 1; l < lum.rows; l++ {
-			k := lum.value[l][i] / lum.value[i][i]
-
-			for j := 0; j < lum.cols; j++ {
-				lum.value[l][j] -= k * lum.value[i][j]
-			}
-		}
-	}
-
-	return lum
-}
-
-// UUM is Upper Unitriangular Matrix
-func (m *Matrix) UUM() Matrix {
 	var uum Matrix
 	var size int
 
-	if m.rows > m.cols {
-		size = m.cols
-	} else {
+	if m.cols > m.rows {
 		size = m.rows
+	} else {
+		size = m.cols
 	}
 
-	value := make([][]float64, size)
+	lum = Matrix{
+		value: make([][]float64, size),
+		rows:  size,
+		cols:  size,
+	}
+
+	uum = Matrix{
+		value: make([][]float64, size),
+		rows:  size,
+		cols:  size,
+	}
 
 	for i := 0; i < size; i++ {
-		value[i] = make([]float64, size)
+		lum.value[i] = make([]float64, size)
+		uum.value[i] = make([]float64, size)
+
 		for j := 0; j < size; j++ {
-			value[i][j] = rand.Float64() * 100.0
+			uum.value[i][j] = m.value[i][j]
+			lum.value[i][j] = 0.0
 		}
 	}
 
-	uum.value = value
-	uum.cols = size
-	uum.rows = size
+	for i := 0; i < size; i++ {
+		for j := i; j < size; j++ {
+			lum.value[j][i] = uum.value[j][i] / uum.value[i][i]
+		}
+	}
 
-	for i := uum.rows - 1; i > 0; i-- {
-		for l := i - 1; l > -1; l-- {
-			k := uum.value[l][i] / uum.value[i][i]
+	for k := 1; k < size; k++ {
+		for i := k - 1; i < size; i++ {
+			for j := i; j < size; j++ {
+				lum.value[j][i] = uum.value[j][i] / uum.value[i][i]
+			}
+		}
 
-			for j := 0; j < uum.cols; j++ {
-				uum.value[l][j] -= k * uum.value[i][j]
+		for i := k; i < size; i++ {
+			for j := k - 1; j < size; j++ {
+				uum.value[i][j] = uum.value[i][j] - lum.value[i][k-1]*uum.value[k-1][j]
 			}
 		}
 	}
 
-	return uum
+	return lum, uum
+}
+
+// Norm is maximum value of summ of element of over each row
+func (m *Matrix) Norm() float64 {
+	var cur float64
+	var norm float64
+	norm = 0.0
+
+	for i := 0; i < m.rows; i++ {
+		cur = 0.0
+
+		for j := 0; j < m.cols; j++ {
+			cur += math.Abs(m.value[i][j])
+		}
+
+		if cur > norm {
+			norm = cur
+		}
+	}
+
+	return norm
+}
+
+func multiply(a *Matrix, b *Matrix) Matrix {
+
+	if a.cols != b.rows {
+		panic("Can't multiply matrixes of this size")
+	}
+
+	result := Matrix{
+		value: make([][]float64, a.rows),
+		rows:  a.rows,
+		cols:  b.cols,
+	}
+
+	for i := 0; i < result.rows; i++ {
+		result.value[i] = make([]float64, result.cols)
+
+		for j := 0; j < result.cols; j++ {
+			// element in i rows & j cols is a sum of multiplilcation of
+			// elements in i rows of matrix a
+			// element in j row of matrix b
+
+			result.value[i][j] = 0.0
+
+			for k := 0; k < a.cols; k++ {
+				result.value[i][j] += a.value[i][k] * b.value[k][j]
+			}
+		}
+	}
+
+	return result
 }
 
 func main() {
-	matrix := generateRandomMatrix(5, 5)
+	m1 := Matrix{
+		value: [][]float64{
+			{3, 5},
+			{6, 7},
+		},
+		rows: 2,
+		cols: 2,
+	}
 
-	matrix.print()
+	lum, uum := m1.LUDecomposition()
 
+	m1.print()
 	fmt.Println()
-	
-	lum := matrix.LUM()
-	
+
 	lum.print()
-
 	fmt.Println()
-
-	uum := matrix.UUM()
 
 	uum.print()
+	fmt.Println()
+	// r := multiply(&m1, &m2)
+
+	// r.print()
 }
